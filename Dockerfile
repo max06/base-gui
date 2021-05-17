@@ -20,7 +20,7 @@ ENV LANG en_US.UTF-8
 ENV LC_ALL ${LANG} 
 
 ENV USER_ID=1000 GROUP_ID=1000
-
+ENV APP=unknown
 
 # Prepare installation
 RUN apt-get -q update
@@ -48,12 +48,11 @@ COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
 
 # Place our own configuration files
 COPY localfs/supervisord.conf /etc/
+COPY localfs/startup.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/startup.sh
 
 # Add user to avoid root and create directories
-RUN groupadd --gid ${GROUP_ID} app && \
-    useradd --home-dir /app --shell /bin/bash --uid ${USER_ID} --gid ${GROUP_ID} app && \
-    mkdir -p /app /data && \
-    chown app:app /app /data
+RUN mkdir -p /app /data
 
 # Set working dir
 WORKDIR /app
@@ -62,4 +61,4 @@ WORKDIR /app
 EXPOSE 4000
 
 # And there we go!
-CMD ["sh", "-c", "chown app:app /dev/stdout && exec gosu app supervisord"]
+ENTRYPOINT [ "/usr/local/bin/startup.sh" ]
