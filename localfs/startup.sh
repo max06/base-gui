@@ -9,6 +9,7 @@ echo "Launching : $LAUNCH"
 
 groupadd --gid ${GROUP_ID} app
 useradd --home-dir /app --shell /bin/bash --uid ${USER_ID} --gid ${GROUP_ID} app
+usermod -a -G tty app
 
 chown -R app:app /app /data /dev/stdout
 
