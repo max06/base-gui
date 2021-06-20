@@ -21,6 +21,7 @@ ENV LC_ALL ${LANG}
 
 ENV USER_ID=1000 GROUP_ID=1000
 ENV APP=unknown
+ENV PASSWORD=""
 
 # Prepare installation
 RUN apt-get -q update
@@ -31,6 +32,7 @@ RUN LC_ALL=C ${PKG} \
     locales \ 
     openbox \
     supervisor \
+    tigervnc-common \
     tigervnc-standalone-server
 
 # Cleanup
