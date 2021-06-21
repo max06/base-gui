@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LAUNCH=${@:-null}
+export LAUNCH=${@:-null}
 [[ $LAUNCH == "null" ]] && export AUTOSTART=false || export AUTOSTART=true
 
 echo "Starting with UID : $USER_ID"
