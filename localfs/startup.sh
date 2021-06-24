@@ -36,5 +36,6 @@ export VNC_ARGS="${args[*]}"
 
 # Permissions
 chown -R app:app /app /data /dev/stdout
+chmod o+w /dev/stdout
 
 exec /usr/sbin/gosu app supervisord
