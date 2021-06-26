@@ -63,6 +63,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}            
             type=edge,branch=master
+            type=edge,branch=ci-test
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.5.0
