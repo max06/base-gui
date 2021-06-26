@@ -72,9 +72,11 @@ jobs:
           push: false
 
           # List of tags
-          tags: ${{ join( [
-            ${{ env.DOCKER_REPO }}:${{ env.VERSION }}-${{ matrix.os }},
-            ${{ env.DOCKER_REPO }}:${{ matrix.os }} ], ',' }}
+          tags: |
+            ${{ join( [
+              ${{ env.DOCKER_REPO }}:${{ env.VERSION }}-${{ matrix.os }},
+              ${{ env.DOCKER_REPO }}:${{ matrix.os }} 
+            ], ',' }}
 
         # env:
         #   OS: ${{ matrix.os }}
