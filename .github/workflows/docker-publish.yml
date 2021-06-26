@@ -49,16 +49,20 @@ jobs:
           username: max06net
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Determine version
-        run: |
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && echo "VERSION=$(echo $VERSION | sed -e 's/^v//')" >> $GITHUB_ENV
-
-          # "dev" if not a release, but in master
-          [ "$VERSION" == "merge" ] && echo "VERSION=dev" >> $GITHUB_ENV
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=-${{ matrix.os }}
+          images: max06net/base-gui
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}            
+            type=edge,branch=master
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.5.0
@@ -66,15 +70,14 @@ jobs:
           # List of build-time variables
           # build-args: # optional
           # platforms: # optional
-          # Always attempt to pull a newer version of the image
           pull: true
-          # Push is a shorthand for --output=type=registry
           push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
-          # List of tags
-          tags: "\
-            ${{ env.DOCKER_REPO }}:${{ env.VERSION }}-${{ matrix.os }},\
-            ${{ env.DOCKER_REPO }}:${{ matrix.os }}"
+          # tags: "\
+          #   ${{ env.DOCKER_REPO }}:${{ env.VERSION }}-${{ matrix.os }},\
+          #   ${{ env.DOCKER_REPO }}:${{ matrix.os }}"
 
         # env:
         #   OS: ${{ matrix.os }}
