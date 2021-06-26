@@ -1,5 +1,7 @@
 # Multistage build
 
+ARG OS=debian:buster-slim
+
 # Building easy-novnc
 FROM golang:1.16.4-buster AS easy-novnc-build
 WORKDIR /src
@@ -9,7 +11,7 @@ RUN go mod init build && \
 
 
 # Building application container
-FROM debian:buster-slim
+FROM $OS
 
 LABEL Name=base-gui Version=0.0.1 Author=max06/base-gui
 
@@ -33,7 +35,7 @@ RUN LC_ALL=C ${PKG} \
     openbox \
     supervisor \
     tigervnc-common \
-    tigervnc-standalone-server
+    tigervnc-standalone-server chromium
 
 # Cleanup
 RUN apt-get clean && \
