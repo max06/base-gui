@@ -35,7 +35,7 @@ RUN LC_ALL=C ${PKG} \
     openbox \
     supervisor \
     tigervnc-common \
-    tigervnc-standalone-server chromium
+    tigervnc-standalone-server
 
 # Cleanup
 RUN apt-get clean && \
