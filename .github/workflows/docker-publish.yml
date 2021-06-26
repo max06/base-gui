@@ -81,9 +81,9 @@ jobs:
           push: false
 
           # List of tags
-          tags: "${{ env.action_state }}-${{ matrix.os }}"
-        env:
-          OS: ${{ matrix.os }}
+          tags: "${{ env.VERSION }}-${{ matrix.os }}"
+        # env:
+        #   OS: ${{ matrix.os }}
 
 
 
