@@ -41,7 +41,9 @@ jobs:
         include:
         - os: buster-slim
           image: debian:buster-slim
-
+        - os: buster
+          image: debian:buster
+          
     steps:
       - name: Dockerhub Login
         uses: docker/login-action@v1.10.0
