@@ -30,66 +30,124 @@ jobs:
             docker build . --file Dockerfile
           fi
 
-  push:
-    needs: test   # Ensure test job passes before pushing image.
+  build:
     runs-on: ubuntu-latest
+
+    needs: test   # Ensure test job passes before pushing image.
     if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
 
+    strategy:
+      matrix:
+        os: [buster-slim, buster]
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Dockerhub Login
+        uses: docker/login-action@v1.10.0
+        with:
+          username: max06net
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build image
-        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+      - name: Github Registry Login
+        uses: docker/login-action@v1.10.0
+        with:
+          registry: docker.pkg.github.com
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log into registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+      - name: Determine version
+        run: |
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && echo "VERSION=$(echo $VERSION | sed -e 's/^v//')"" >> $GITHUB_ENV
+
+          # "dev" if not a release, but in master
+          [ "$VERSION" == "master" ] && echo "VERSION=dev" >> $GITHUB_ENV
+
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v2.5.0
+        with:
+          # List of build-time variables
+          # build-args: # optional
+          # platforms: # optional
+          # Always attempt to pull a newer version of the image
+          pull: true
+          # Push is a shorthand for --output=type=registry
+          push: false
+
+          # List of tags
+          tags:
+            - ${{ env.action_state }}-${{ matrix.os }}
+        env:
+          OS: ${{ matrix.os }}
+
+
+
+  # push:
+  #   needs: test   # Ensure test job passes before pushing image.
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push'
+  #   permissions:
+  #     contents: read
+  #     packages: write
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - name: Build image
+  #       run: docker build . --file Dockerfile --tag $IMAGE_NAME
+
+  #     - name: Log into registry
+  #       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       
-      - name: Log into Dockerhub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_LOGIN }} --password-stdin
+  #     - name: Log into Dockerhub
+  #       run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_LOGIN }} --password-stdin
 
-      - name: Push image to github registry
-        run: |
-          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+  #     - name: Push image to github registry
+  #       run: |
+  #         IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
 
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+  #         # Change all uppercase to lowercase
+  #         IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
 
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+  #         # Strip git ref prefix from version
+  #         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+  #         # Strip "v" prefix from tag name
+  #         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=dev
+  #         # Use Docker `latest` tag convention
+  #         [ "$VERSION" == "master" ] && VERSION=dev
 
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
+  #         echo IMAGE_ID=$IMAGE_ID
+  #         echo VERSION=$VERSION
 
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+  #         docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+  #         docker push $IMAGE_ID:$VERSION
 
-      - name: Push image to dockerhub
-        run: |
-          IMAGE_ID=max06net/$IMAGE_NAME
+  #     - name: Push image to dockerhub
+  #       run: |
+  #         IMAGE_ID=max06net/$IMAGE_NAME
 
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+  #         # Change all uppercase to lowercase
+  #         IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
 
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+  #         # Strip git ref prefix from version
+  #         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+  #         # Strip "v" prefix from tag name
+  #         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=dev
+  #         # Use Docker `latest` tag convention
+  #         [ "$VERSION" == "master" ] && VERSION=dev
 
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
+  #         echo IMAGE_ID=$IMAGE_ID
+  #         echo VERSION=$VERSION
 
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+  #         docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+  #         docker push $IMAGE_ID:$VERSION
