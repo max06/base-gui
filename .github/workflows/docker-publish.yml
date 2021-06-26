@@ -38,11 +38,11 @@ jobs:
     strategy:
       matrix:
         os: [buster-slim, buster]
-      include:
-      - os: buster-slim
-        image: debian:buster-slim
-      - os: buster
-        image: debian:buster
+        include:
+        - os: buster-slim
+          image: debian:buster-slim
+        - os: buster
+          image: debian:buster
 
     steps:
       - name: Dockerhub Login
