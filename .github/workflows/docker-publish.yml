@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs: test   # Ensure test job passes before pushing image.
-    if: github.event_name == 'push'
+    #if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
