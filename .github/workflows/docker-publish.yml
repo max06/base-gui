@@ -11,8 +11,7 @@ on:
 
 
 env:
-  IMAGE_NAME: base-gui
-
+  DOCKER_REPO: max06net/base-gui
 
 jobs:
   test:           # See also https://docs.docker.com/docker-hub/builds/automated-testing/
@@ -50,13 +49,6 @@ jobs:
           username: max06net
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Github Registry Login
-        uses: docker/login-action@v1.10.0
-        with:
-          registry: docker.pkg.github.com
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Determine version
         run: |
           # Strip git ref prefix from version
@@ -67,7 +59,6 @@ jobs:
 
           # "dev" if not a release, but in master
           [ "$VERSION" == "merge" ] && echo "VERSION=dev" >> $GITHUB_ENV
-
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v2.5.0
@@ -81,7 +72,10 @@ jobs:
           push: false
 
           # List of tags
-          tags: "${{ env.VERSION }}-${{ matrix.os }}"
+          tags: ${{ join( [
+            ${{ env.DOCKER_REPO }}:${{ env.VERSION }}-${{ matrix.os }},
+            ${{ env.DOCKER_REPO }}:${{ matrix.os }} ], ',' }}
+
         # env:
         #   OS: ${{ matrix.os }}
 
