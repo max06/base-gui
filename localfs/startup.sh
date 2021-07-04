@@ -23,8 +23,14 @@ else
     echo "Password set"
 fi
 
+# Local connection only
+if [ "$ALLOW_DIRECT_VNC" = false ] ; then
+    args+=("-localhost")
+else
+    echo "Attention! VNC Port 5900 is bound to all interfaces, no limit!"
+fi
+
 # VNC arguments
-args+=("-localhost")
 args+=("-rfbport 5900")
 args+=("-AlwaysShared")
 args+=("-AcceptKeyEvents")

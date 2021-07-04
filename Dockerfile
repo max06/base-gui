@@ -13,23 +13,23 @@ RUN go mod init build && \
 # Building application container
 FROM $OS
 
-LABEL Name=base-gui Version=0.0.1 Author=max06/base-gui
+LABEL Name=base-gui Author=max06/base-gui Flavor=$OS
 
 ARG PKG="apt-get install --no-install-recommends -y"
 
-ENV DEBIAN_FRONTEND noninteractive
 ENV LANG en_US.UTF-8
 ENV LC_ALL ${LANG} 
 
 ENV USER_ID=1000 GROUP_ID=1000
 ENV APP=unknown
 ENV PASSWORD=""
+ENV ALLOW_DIRECT_VNC=false
 
 # Prepare installation
 RUN apt-get -q update
 
 # Install all the stuff
-RUN LC_ALL=C ${PKG} \
+RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
     gosu \
     locales \ 
     openbox \
@@ -42,10 +42,6 @@ RUN apt-get clean && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /var/cache/fontconfig/*
-
-# Create locale (to be moved to container start)
-RUN sed -i "/${LANG}/s/^# //g" /etc/locale.gen && \
-    locale-gen 
 
 # Add easy-novnc from the previous build
 COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
@@ -63,6 +59,9 @@ WORKDIR /app
 
 # Web viewer
 EXPOSE 4000
+
+# Create locale (in subsequent build)
+ONBUILD RUN sed -i "/${LANG}/s/^# //g" /etc/locale.gen && locale-gen
 
 # And there we go!
 ENTRYPOINT [ "/usr/local/bin/startup.sh" ]
