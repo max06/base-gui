@@ -35,7 +35,8 @@ RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
     openbox \
     supervisor \
     tigervnc-common \
-    tigervnc-standalone-server
+    tigervnc-standalone-server \
+    tint2
 
 # Cleanup
 RUN apt-get clean && \
@@ -49,6 +50,8 @@ COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
 # Place our own configuration files
 COPY localfs/supervisord.conf /etc/
 COPY localfs/startup.sh /usr/local/bin/
+COPY localfs/tint2rc /etc/xdg/tint2/
+COPY localfs/openbox-autostart /etc/xdg/openbox/autostart
 RUN chmod +x /usr/local/bin/startup.sh
 
 # Add user to avoid root and create directories
