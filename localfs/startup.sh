@@ -9,7 +9,7 @@ echo "Launching : $LAUNCH"
 # Userhandling
 groupadd --gid ${GROUP_ID} app
 useradd --home-dir /app --shell /bin/bash --uid ${USER_ID} --gid ${GROUP_ID} app
-usermod -a -G tty ${USER_ID}
+usermod -a -G tty app
 
 # VNC password
 if [[ -z "${PASSWORD}" ]]; then
