@@ -41,7 +41,7 @@ args+=("-AcceptCutText")
 export VNC_ARGS="${args[*]}"
 
 # Permissions
-chown -R app:app /app /data /dev/stdout
+chown -R ${USER_ID}:${GROUP_ID} /app /data /dev/stdout
 chmod o+w /dev/stdout
 
-exec /usr/sbin/gosu app supervisord
+exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
