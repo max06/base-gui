@@ -9,7 +9,7 @@ echo "Launching : $LAUNCH"
 # Userhandling
 groupadd --gid ${GROUP_ID} app
 useradd --home-dir /app --shell /bin/bash --uid ${USER_ID} --gid ${GROUP_ID} app
-usermod -a -G tty app
+usermod -a -G tty ${USER_ID}
 
 # VNC password
 if [[ -z "${PASSWORD}" ]]; then
@@ -41,7 +41,7 @@ args+=("-AcceptCutText")
 export VNC_ARGS="${args[*]}"
 
 # Permissions
-chown -R app:app /app /data /dev/stdout
+chown -R ${USER_ID}:${GROUP_ID} /app /data /dev/stdout
 chmod o+w /dev/stdout
 
-exec /usr/sbin/gosu app supervisord
+exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
