@@ -30,6 +30,15 @@ else
     echo "Attention! VNC Port 5900 is bound to all interfaces, no limit!"
 fi
 
+# Geometry
+if [[ -z "${GEOMETRY}" ]]; then
+    echo "No geometry given"
+    args+=("-geometry 1024x768")
+else
+    echo "Custom geometry specified: ${GEOMETRY}"
+    args+=("-geometry ${GEOMETRY}")
+fi
+
 # VNC arguments
 args+=("-rfbport 5900")
 args+=("-AlwaysShared")
