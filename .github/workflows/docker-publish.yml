@@ -23,7 +23,7 @@ jobs:
             docker-compose --file docker-compose.test.yml build
             docker-compose --file docker-compose.test.yml run sut
           else
-            docker build . --file Dockerfile
+            docker build --build-arg OS="debian:bullseye-slim" --file Dockerfile .
           fi
 
   build:
@@ -37,12 +37,16 @@ jobs:
 
     strategy:
       matrix:
-        os: [buster-slim, buster]
+        os: [buster-slim, buster, bullseye-slim, bullseye]
         include:
         - os: buster-slim
           image: debian:buster-slim
         - os: buster
           image: debian:buster
+        - os: bullseye-slim
+          image: debian:bullseye-slim
+        - os: bullseye
+          image: debian:bullseye
 
     steps:
       - name: Dockerhub Login
@@ -59,7 +63,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}-${{ matrix.os }}
             type=semver,pattern={{major}}.{{minor}}-${{ matrix.os }}
-            type=semver,pattern={{major}}-${{ matrix.os }}        
+            type=semver,pattern={{major}}-${{ matrix.os }}
             type=edge,branch=master,suffix=-${{ matrix.os }}
 
       - name: Build and push Docker images
