@@ -67,7 +67,7 @@ jobs:
             type=edge,branch=master,suffix=-${{ matrix.os }}
 
       - name: Build and push Docker images
-        uses: docker/build-push-action@v2.5.0
+        uses: docker/build-push-action@v4
         with:
           build-args: |
             OS=${{ !matrix.image && matrix.os || matrix.image }}
@@ -76,5 +76,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
         # env:
         #   OS: ${{ matrix.os }}
