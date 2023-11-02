@@ -5,6 +5,7 @@ export LAUNCH=${@:-null}
 
 echo "Starting with UID : $USER_ID"
 echo "Launching : $LAUNCH"
+echo "Umask: $UMASK"
 
 # Userhandling
 groupadd --gid ${GROUP_ID} app
@@ -52,5 +53,8 @@ export VNC_ARGS="${args[*]}"
 # Permissions
 chown -R ${USER_ID}:${GROUP_ID} /app /data /dev/stdout
 chmod o+w /dev/stdout
+
+# Setting umask
+umask ${UMASK}
 
 exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
