@@ -52,5 +52,9 @@ export VNC_ARGS="${args[*]}"
 # Permissions
 chown -R ${USER_ID}:${GROUP_ID} /app /data /dev/stdout
 chmod o+w /dev/stdout
+# Workaround for vscode devcontainers
+if [ -d "/tmp/.X11-unix" ]; then
+    rm -rf /tmp/.X11-unix
+fi
 
 exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
