@@ -5,6 +5,7 @@ export LAUNCH=${@:-null}
 
 echo "Starting with UID : $USER_ID"
 echo "Launching : $LAUNCH"
+echo "Umask: $UMASK"
 
 # Userhandling
 groupadd --gid ${GROUP_ID} app
@@ -56,5 +57,8 @@ chmod o+w /dev/stdout
 if [ -d "/tmp/.X11-unix" ]; then
     rm -rf /tmp/.X11-unix
 fi
+
+# Setting umask
+umask ${UMASK}
 
 exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
