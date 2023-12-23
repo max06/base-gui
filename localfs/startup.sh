@@ -61,4 +61,17 @@ fi
 # Setting umask
 umask ${UMASK}
 
+# Workaround for vscode devcontainers
+if [ -d "/tmp/.X11-unix" ]; then
+    rm -rf /tmp/.X11-unix
+fi
+
+# check if nginx is already running
+if [ -f /var/run/nginx.pid ]; then
+    nginx -s reload
+else
+    nginx
+fi
+
+
 exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
