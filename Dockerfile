@@ -1,16 +1,16 @@
+ARG OS=debian:bookworm-slim
+
 # Multistage build
 
-ARG OS=debian:buster-slim
+# Stage 1: Get novnc
+FROM bitnami/git:2.43.0 as novnc
 
-# Building easy-novnc
-FROM golang:1.16.4-buster AS easy-novnc-build
-WORKDIR /src
-RUN go mod init build && \
-    go get github.com/geek1011/easy-novnc@v1.1.0 && \
-    go build -o /bin/easy-novnc github.com/geek1011/easy-novnc
+ARG NOVNC_VERSION=v1.4.0
 
+WORKDIR /app
+RUN git clone --depth 1 --branch ${NOVNC_VERSION} https://github.com/novnc/novnc
 
-# Building application container
+# Stage 2: Final image
 FROM $OS
 
 LABEL Name=base-gui Author=max06/base-gui Flavor=$OS
@@ -18,7 +18,7 @@ LABEL Name=base-gui Author=max06/base-gui Flavor=$OS
 ARG PKG="apt-get install --no-install-recommends -y"
 
 ENV LANG en_US.UTF-8
-ENV LC_ALL ${LANG} 
+ENV LC_ALL ${LANG}
 
 ENV USER_ID=1000 GROUP_ID=1000
 ENV APP=unknown
@@ -32,12 +32,15 @@ RUN apt-get -q update
 # Install all the stuff
 RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
     gosu \
-    locales \ 
+    locales \
     openbox \
     supervisor \
     tigervnc-common \
     tigervnc-standalone-server \
-    tint2
+    tint2 \
+    python3-pip \
+    python3-venv \
+    nginx-light
 
 # Cleanup
 RUN apt-get clean && \
@@ -45,8 +48,17 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /var/cache/fontconfig/*
 
-# Add easy-novnc from the previous build
-COPY --from=easy-novnc-build /bin/easy-novnc /usr/local/bin/
+# novnc installation and patching
+COPY --from=novnc /app/novnc/ /opt/novnc/
+RUN sed -i "s/UI.initSetting('resize', 'off')/UI.initSetting('resize', 'remote')/g" /opt/novnc/app/ui.js
+
+
+# install websockify
+RUN python3 -m venv /opt/websockify
+RUN /opt/websockify/bin/pip3 install websockify
+
+# prepare nginx
+COPY localfs/nginx/vnc.conf /etc/nginx/sites-enabled/vnc.conf
 
 # Place our own configuration files
 COPY localfs/supervisord.conf /etc/

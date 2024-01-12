@@ -37,12 +37,12 @@ jobs:
 
     strategy:
       matrix:
-        os: [buster-slim, buster, bullseye-slim, bullseye]
+        os: [bookworm-slim, bookworm, bullseye-slim, bullseye]
         include:
-        - os: buster-slim
-          image: debian:buster-slim
-        - os: buster
-          image: debian:buster
+        - os: bookworm-slim
+          image: debian:bookworm-slim
+        - os: bookworm
+          image: debian:bookworm
         - os: bullseye-slim
           image: debian:bullseye-slim
         - os: bullseye
@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-     
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
