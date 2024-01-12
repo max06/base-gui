@@ -1,4 +1,4 @@
-ARG OS=debian:buster-slim
+ARG OS=debian:bookworm-slim
 
 # Multistage build
 
