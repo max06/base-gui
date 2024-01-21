@@ -1,16 +1,38 @@
 #!/bin/bash
 
-export LAUNCH=${@:-null}
-[[ $LAUNCH == "null" ]] && export AUTOSTART=false || export AUTOSTART=true
+set -x
+
+if [ $# -eq 0 ]; then
+    echo "No arguments supplied, will start an empty desktop."
+    AUTOSTART=false
+    LAUNCH=""
+else
+    LAUNCH=$*
+    AUTOSTART=true
+fi
+
+export AUTOSTART LAUNCH
 
 echo "Starting with UID : $USER_ID"
-echo "Launching : $LAUNCH"
+echo "Launching : ${LAUNCH[0]}"
 echo "Umask: $UMASK"
 
 # Userhandling
-groupadd --gid ${GROUP_ID} app
-useradd --home-dir /app --shell /bin/bash --uid ${USER_ID} --gid ${GROUP_ID} app
-usermod -a -G tty app
+if ! group=$(getent group "${GROUP_ID}"); then
+    echo "Creating group app with gid ${GROUP_ID}"
+    groupadd --gid "${GROUP_ID}" app
+else
+    echo "Group with gid ${GROUP_ID} ($(echo $group | cut -d ":" -f 1)) already exists"
+fi
+
+if ! user=$(getent passwd "${USER_ID}"); then
+    echo "Creating user app with uid ${USER_ID}"
+    useradd --home-dir /app --shell /bin/bash --uid "${USER_ID}" --gid "${GROUP_ID}" app
+else
+    echo "User with uid ${USER_ID} ($(echo $user | cut -d ":" -f 1)) already exists"
+fi
+
+usermod -a -G tty "$(getent passwd "${USER_ID}" | cut -d ":" -f 1)"
 
 # VNC password
 if [[ -z "${PASSWORD}" ]]; then
@@ -18,7 +40,7 @@ if [[ -z "${PASSWORD}" ]]; then
     args+=("-SecurityTypes None")
 else
     mkdir /app/.vnc
-    echo ${PASSWORD} | tigervncpasswd -f > /app/.vnc/passwd
+    echo "${PASSWORD}" | tigervncpasswd -f > /app/.vnc/passwd
     args+=("-PasswordFile /app/.vnc/passwd")
     args+=("-SecurityTypes VncAuth,TLSVnc")
     echo "Password set"
@@ -51,7 +73,7 @@ args+=("-AcceptCutText")
 export VNC_ARGS="${args[*]}"
 
 # Permissions
-chown -R ${USER_ID}:${GROUP_ID} /app /data /dev/stdout
+chown -R "${USER_ID}":"${GROUP_ID}" /app /data /dev/stdout
 chmod o+w /dev/stdout
 # Workaround for vscode devcontainers
 if [ -d "/tmp/.X11-unix" ]; then
@@ -59,7 +81,7 @@ if [ -d "/tmp/.X11-unix" ]; then
 fi
 
 # Setting umask
-umask ${UMASK}
+umask "${UMASK}"
 
 # Workaround for vscode devcontainers
 if [ -d "/tmp/.X11-unix" ]; then
@@ -73,5 +95,4 @@ else
     nginx
 fi
 
-
-exec /usr/sbin/gosu ${USER_ID}:${GROUP_ID} supervisord
+exec /usr/sbin/gosu "${USER_ID}":"${GROUP_ID}" supervisord
