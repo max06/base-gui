@@ -15,7 +15,7 @@ FROM $OS
 
 LABEL Name=base-gui Author=max06/base-gui Flavor=$OS
 
-ARG PKG="apt-get install --no-install-recommends -y"
+ARG PKG="apt-get install --no-install-recommends -y --ignore-missing"
 
 ENV LANG en_US.UTF-8
 ENV LC_ALL ${LANG}
@@ -28,6 +28,7 @@ ENV ALLOW_DIRECT_VNC=false
 
 # Prepare installation
 RUN apt-get -q update
+RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} lsb-release
 
 # Install all the stuff
 RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
@@ -36,6 +37,7 @@ RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
     openbox \
     supervisor \
     tigervnc-common \
+    $(lsb_release -sc | grep -q bookworm && echo tigervnc-tools) \
     tigervnc-standalone-server \
     tint2 \
     python3-pip \
