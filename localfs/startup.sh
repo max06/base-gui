@@ -88,10 +88,19 @@ if [ -d "/tmp/.X11-unix" ]; then
     rm -rf /tmp/.X11-unix
 fi
 
-# check if nginx is already running
+# Read pid from file and check if process is running
 if [ -f /var/run/nginx.pid ]; then
-    nginx -s reload
+    pid=$(cat /var/run/nginx.pid)
+    if ! ps -p "${pid}" > /dev/null; then
+        echo "nginx is not running, starting it now"
+        rm /var/run/nginx.pid
+        nginx
+    else
+        echo "nginx is running, sending reload signal"
+        nginx -s reload
+    fi
 else
+    echo "nginx is not running, starting it now"
     nginx
 fi
 
