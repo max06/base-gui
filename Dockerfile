@@ -27,25 +27,24 @@ ENV UMASK=0022
 ENV ALLOW_DIRECT_VNC=false
 
 # Prepare installation
-RUN apt-get -q update
-RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} lsb-release
-
-# Install all the stuff
-RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
-    gosu \
-    locales \
-    openbox \
-    supervisor \
-    tigervnc-common \
-    $(lsb_release -sc | grep -q bookworm && echo tigervnc-tools) \
-    tigervnc-standalone-server \
-    tint2 \
-    python3-pip \
-    python3-venv \
-    nginx-light
-
-# Cleanup
-RUN apt-get clean && \
+# Then install all the stuff
+# Then clean up
+RUN apt-get -q update && \
+    apt-get -q upgrade && \
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} lsb-release && \
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
+        gosu \
+        locales \
+        nginx-light \
+        openbox \
+        python3-pip \
+        python3-venv \
+        supervisor \
+        tigervnc-common \
+        tigervnc-standalone-server \
+        $(lsb_release -sc | grep -q bookworm && echo tigervnc-tools) \
+        tint2 && \
+    apt-get clean && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /var/cache/fontconfig/*
