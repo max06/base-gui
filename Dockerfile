@@ -6,9 +6,14 @@ ARG OS=debian:bookworm-slim
 FROM bitnami/git:2.43.0 as novnc
 
 ARG NOVNC_VERSION=v1.4.0
+ARG TMP_GIT_DIR=$(mktemp -d)
 
 WORKDIR /app
-RUN git clone --depth 1 --branch ${NOVNC_VERSION} https://github.com/novnc/novnc
+RUN mkdir novnc && \
+    git clone --depth 1 --branch ${NOVNC_VERSION} \
+        https://github.com/novnc/novnc ${TMP_GIT_DIR} && \
+    cp -r ${TMP_GIT_DIR}/{app,core,utils,vendor,vnc.html} ./novnc/
+    
 
 # Stage 2: Final image
 FROM $OS
