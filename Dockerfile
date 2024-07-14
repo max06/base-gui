@@ -1,19 +1,27 @@
+# syntax=docker/dockerfile:1.7-labs
 ARG OS=debian:bookworm-slim
 
 # Multistage build
 
 # Stage 1: Get novnc
-FROM bitnami/git:2.43.0 as novnc
+FROM $OS AS novnc
 
-ARG NOVNC_VERSION=v1.4.0
-ARG TMP_GIT_DIR=$(mktemp -d)
+ARG NOVNC_VERSION=v1.5.0
 
-WORKDIR /app
-RUN mkdir novnc && \
-    git clone --depth 1 --branch ${NOVNC_VERSION} \
-        https://github.com/novnc/novnc ${TMP_GIT_DIR} && \
-    cp -r ${TMP_GIT_DIR}/{app,core,utils,vendor,vnc.html} ./novnc/
-    
+ADD --exclude=AUTHORS \
+        --exclude=docs \
+        --exclude=eslint.config.mjs \
+        --exclude=karma.conf.js \
+        --exclude=LICENSE.txt \
+        --exclude=package.json \
+        --exclude=po \
+        --exclude=README.md \
+        --exclude=snap \
+        --exclude=tests \
+        --exclude=vnc_lite.html \
+    https://github.com/novnc/noVNC.git#${NOVNC_VERSION}
+    /app/novnc/
+
 
 # Stage 2: Final image
 FROM $OS
