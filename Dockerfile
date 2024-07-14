@@ -19,7 +19,7 @@ ADD --exclude=AUTHORS \
         --exclude=snap \
         --exclude=tests \
         --exclude=vnc_lite.html \
-    https://github.com/novnc/noVNC.git#${NOVNC_VERSION}
+    https://github.com/novnc/noVNC.git#${NOVNC_VERSION} \
     /app/novnc/
 
 
