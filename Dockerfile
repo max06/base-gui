@@ -12,7 +12,6 @@ ADD --exclude=AUTHORS \
         --exclude=docs \
         --exclude=eslint.config.mjs \
         --exclude=karma.conf.js \
-        --exclude=LICENSE.txt \
         --exclude=package.json \
         --exclude=po \
         --exclude=README.md \
