@@ -3,9 +3,9 @@ ARG OS=debian:bookworm-slim
 # Multistage build
 
 # Stage 1: Get novnc
-FROM bitnami/git:2.43.0 as novnc
+FROM bitnami/git:latest as novnc
 
-ARG NOVNC_VERSION=v1.4.0
+ARG NOVNC_VERSION=v1.5.0
 
 WORKDIR /app
 RUN git clone --depth 1 --branch ${NOVNC_VERSION} https://github.com/novnc/novnc
