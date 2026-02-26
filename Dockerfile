@@ -37,7 +37,7 @@ RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
     openbox \
     supervisor \
     tigervnc-common \
-    $(lsb_release -sc | grep -q bookworm && echo tigervnc-tools) \
+    tigervnc-tools \
     tigervnc-standalone-server \
     tint2 \
     python3-pip \
