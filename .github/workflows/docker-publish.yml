@@ -37,16 +37,12 @@ jobs:
 
     strategy:
       matrix:
-        os: [bookworm-slim, bookworm, bullseye-slim, bullseye, trixie, trixie-slim]
+        os: [bookworm-slim, bookworm, trixie, trixie-slim]
         include:
         - os: bookworm-slim
           image: debian:bookworm-slim
         - os: bookworm
           image: debian:bookworm
-        - os: bullseye-slim
-          image: debian:bullseye-slim
-        - os: bullseye
-          image: debian:bullseye
         - os: trixie-slim
           image: debian:trixie-slim
         - os: trixie
