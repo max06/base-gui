@@ -23,7 +23,7 @@ jobs:
             docker-compose --file docker-compose.test.yml build
             docker-compose --file docker-compose.test.yml run sut
           else
-            docker build --build-arg OS="debian:bullseye-slim" --file Dockerfile .
+            docker build --build-arg OS="debian:trixie-slim" --file Dockerfile .
           fi
 
   build:
@@ -37,7 +37,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [bookworm-slim, bookworm, bullseye-slim, bullseye]
+        os: [bookworm-slim, bookworm, bullseye-slim, bullseye, trixie, trixie-slim]
         include:
         - os: bookworm-slim
           image: debian:bookworm-slim
@@ -47,6 +47,10 @@ jobs:
           image: debian:bullseye-slim
         - os: bullseye
           image: debian:bullseye
+        - os: trixie-slim
+          image: debian:trixie-slim
+        - os: trixie
+          image: debian:trixie
 
     steps:
       - name: Set up QEMU
