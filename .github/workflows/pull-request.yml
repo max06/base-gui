@@ -50,7 +50,7 @@ jobs:
           targets: ${{ matrix.target }}
           set: |
             *.platform=${{ matrix.platforms }}
-            *.labels=${{ steps.meta.outputs.labels }}
+            *.labels="${{ steps.meta.outputs.labels }}"
             *.tags="max06net/base-gui"
             *.base-gui-*.outputs=type=image,push-by-digest=true,name-canonical=true,push=true
 
