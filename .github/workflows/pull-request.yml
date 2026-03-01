@@ -41,7 +41,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: max06net/base-gui
+          images: docker.io/max06net/base-gui
       -
         name: Build
         id: build
@@ -50,7 +50,7 @@ jobs:
           targets: ${{ matrix.target }}
           set: |
             *.platform=${{ matrix.platforms }}
-            *.tags=max06net/base-gui
+            *.tags=docker.io/max06net/base-gui
             base-gui-*.output=type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
