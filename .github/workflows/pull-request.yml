@@ -1,0 +1,36 @@
+name: PR
+
+on:
+  pull_request:   # Run tests for any PRs.
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Generate matrix
+        id: generate
+        uses: docker/bake-action/subaction/matrix@v6
+        with:
+          target: base-gui
+          fields: matrix.base
+
+  validate:
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+    strategy:
+      fail-fast: true
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      -
+        name: Validate
+        uses: docker/bake-action@v6
+        with:
+          targets: ${{ matrix.target }}
