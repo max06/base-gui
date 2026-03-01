@@ -18,7 +18,7 @@ jobs:
         uses: docker/bake-action/subaction/matrix@v6
         with:
           target: base-gui
-          fields: targets
+          fields: platforms
 
   validate:
     runs-on: ubuntu-latest
