@@ -50,7 +50,7 @@ jobs:
           targets: ${{ matrix.target }}
           set: |
             *.platform=${{ matrix.platforms }}
-            *.tags="max06net/base-gui"
+            *.tags=max06net/base-gui
             base-gui-*.output=type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
