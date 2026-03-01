@@ -36,3 +36,10 @@ jobs:
           targets: ${{ matrix.target }}
           set: |
             *.platform=${{ matrix.platforms }}
+            *.output=type=tar,dest=/tmp/${{ matrix.target }}.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.target }}-${{ matrix.platforms == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/${{ matrix.target }}.tar
