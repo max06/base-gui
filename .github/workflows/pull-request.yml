@@ -21,16 +21,18 @@ jobs:
           fields: platforms
 
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ${{ startsWith(matrix.platforms, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     needs:
       - prepare
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       -
-        name: Validate
+        name: Build
         uses: docker/bake-action@v6
         with:
           targets: ${{ matrix.target }}
+          set: |
+            *.platform=${{ matrix.platforms }}
