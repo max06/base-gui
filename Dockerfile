@@ -1,78 +1,60 @@
-ARG OS=debian:bookworm-slim
+# syntax=docker/dockerfile:1.19
+# check=skip=SecretsUsedInArgOrEnv
 
-# Multistage build
+# The base-image to be used
+ARG OS=debian:trixie-slim
 
-# Stage 1: Get novnc
-FROM bitnami/git:latest as novnc
-
-ARG NOVNC_VERSION=v1.5.0
-
-WORKDIR /app
-RUN git clone --depth 1 --branch ${NOVNC_VERSION} https://github.com/novnc/novnc
-
-# Stage 2: Final image
+# The build starts here.
 FROM $OS
+
+ARG OS
 
 LABEL Name=base-gui Author=max06/base-gui Flavor=$OS
 
-ARG PKG="apt-get install --no-install-recommends -y --ignore-missing"
+# Container Language
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=${LANG}
 
-ENV LANG en_US.UTF-8
-ENV LC_ALL ${LANG}
+# App options
+ENV USER_ID=1000 GROUP_ID=1000 APP=unknown UMASK=0022 PASSWORD="" ALLOW_DIRECT_VNC=false
 
-ENV USER_ID=1000 GROUP_ID=1000
-ENV APP=unknown
-ENV PASSWORD=""
-ENV UMASK=0022
-ENV ALLOW_DIRECT_VNC=false
+# Configure apt and install required packages
+RUN \
+  rm -f /etc/apt/apt.conf.d/docker-clean; \
+  echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt -q update && \
+  LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y --ignore-missing \
+  gosu \
+  locales \
+  openbox \
+  supervisor \
+  tigervnc-common \
+  tigervnc-tools \
+  tigervnc-standalone-server \
+  tint2 \
+  ca-certificates \
+  python3-minimal \
+  python3-setuptools \
+  nginx-light && \
+  rm /var/cache/fontconfig/*
 
-# Prepare installation
-RUN apt-get -q update
-RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} lsb-release
-
-# Install all the stuff
-RUN LC_ALL=C DEBIAN_FRONTEND=noninteractive ${PKG} \
-    gosu \
-    locales \
-    openbox \
-    supervisor \
-    tigervnc-common \
-    tigervnc-tools \
-    tigervnc-standalone-server \
-    tint2 \
-    python3-pip \
-    python3-venv \
-    nginx-light
-
-# Cleanup
-RUN apt-get clean && \
-    apt-get autoremove && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /var/cache/fontconfig/*
-
-# novnc installation and patching
-COPY --from=novnc /app/novnc/ /opt/novnc/
-RUN sed -i "s/UI.initSetting('resize', 'off')/UI.initSetting('resize', 'remote')/g" /opt/novnc/app/ui.js
-
+# novnc installation
+COPY --from=novnc /tmp/ /opt/novnc/
 
 # install websockify
-RUN python3 -m venv /opt/websockify
-RUN /opt/websockify/bin/pip3 install websockify
+RUN --mount=type=bind,from=websockify,source=/tmp,target=/tmp/websockify,rw \
+  cd /tmp/websockify && \
+  python3 setup.py install
 
-# prepare nginx
-COPY localfs/nginx/vnc.conf /etc/nginx/sites-enabled/vnc.conf
-
-# Place our own configuration files
-COPY localfs/supervisord.conf /etc/
-COPY localfs/startup.sh /usr/local/bin/
-COPY localfs/tint2rc /etc/xdg/tint2/
-COPY localfs/openbox-autostart /etc/xdg/openbox/autostart
+# Copy configuration files and scripts
+COPY localfs/ /
 RUN chmod +x /usr/local/bin/startup.sh
 
 # Add user to avoid root and create directories
 RUN mkdir -p /app /data
-
-# Set working dir
 WORKDIR /app
 
 # Web viewer

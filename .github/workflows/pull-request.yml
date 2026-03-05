@@ -1,0 +1,144 @@
+name: PR
+
+on:
+  pull_request:
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.filter.outputs.matrix }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Generate matrix
+        id: generate
+        uses: docker/bake-action/subaction/matrix@v6
+        with:
+          fields: target,platforms
+      -
+        name: Filter matrix
+        id: filter
+        run: |
+          matrix=$(echo '${{ steps.generate.outputs.matrix }}' | \
+            jq -c '[.[] | select(.target | IN("novnc", "websockify", "dev") | not)]')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  validate:
+    runs-on: ${{ startsWith(matrix.platforms, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    needs:
+      - prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      -
+        name: Dockerhub Login
+        uses: docker/login-action@v3
+        with:
+          username: max06net
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      -
+        name: Build and push by digest
+        id: build
+        if: endsWith(matrix.target, 'trixie-slim')
+        uses: docker/bake-action@v6
+        with:
+          targets: ${{ matrix.target }}
+          set: |
+            ${{ matrix.target }}.platform=${{ matrix.platforms }}
+            ${{ matrix.target }}.tags=docker.io/max06net/base-gui
+            ${{ matrix.target }}.output=type=image,push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+
+      -
+        name: Build (cache only)
+        if: "!endsWith(matrix.target, 'trixie-slim')"
+        uses: docker/bake-action@v6
+        with:
+          targets: ${{ matrix.target }}
+          set: |
+            ${{ matrix.target }}.platform=${{ matrix.platforms }}
+            ${{ matrix.target }}.output=type=cacheonly
+
+      -
+        name: Export digest
+        if: endsWith(matrix.target, 'trixie-slim')
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest=$(echo '${{ steps.build.outputs.metadata }}' | jq -r '."${{ matrix.target }}"."containerimage.digest"')
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      -
+        name: Upload digest
+        if: endsWith(matrix.target, 'trixie-slim')
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.target }}-${{ startsWith(matrix.platforms, 'linux/arm') && 'arm64' || 'amd64' }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - trixie-slim
+    steps:
+      -
+        name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.target }}-*
+          merge-multiple: true
+
+      -
+        name: Dockerhub Login
+        uses: docker/login-action@v3
+        with:
+          username: max06net
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      -
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/max06net/base-gui
+          tags: |
+            type=ref,prefix=pr-,suffix=-${{ matrix.target }},event=pr
+
+      -
+        name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'docker.io/max06net/base-gui@sha256:%s ' *)
+
+      -
+        name: Inspect image
+        run: |
+          docker buildx imagetools inspect docker.io/max06net/base-gui:${{ steps.meta.outputs.version }}
