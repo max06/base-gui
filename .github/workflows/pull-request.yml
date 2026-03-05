@@ -23,7 +23,7 @@ jobs:
         id: filter
         run: |
           matrix=$(echo '${{ steps.generate.outputs.matrix }}' | \
-            jq -c '[.[] | select(.target | startswith("base-gui-"))]')
+            jq -c '[.[] | select(.target | IN("novnc", "websockify", "dev") | not)]')
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   validate:
@@ -100,7 +100,7 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - base-gui-trixie-slim
+          - trixie-slim
     steps:
       -
         name: Download digests
@@ -127,12 +127,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: docker.io/max06net/base-gui
-          # matrix.target is e.g. "base-gui-trixie-slim"
-          # Strip the "base-gui-" prefix to get a clean distro suffix: "trixie-slim"
           tags: |
-            type=ref,prefix=pr-,suffix=-${{ matrix.target != '' && matrix.target || 'unknown' }},event=pr
-          flavor: |
-            suffix=-${{ matrix.target }},onlatest=false
+            type=ref,prefix=pr-,suffix=-${{ matrix.target }},event=pr
 
       -
         name: Create manifest list and push

@@ -25,7 +25,7 @@ target "websockify" {
 
 
 target "base-gui" {
-  name = "base-gui-${base}"
+  name = "${base}"
 
   args = {
     OS = "debian:${base}"
