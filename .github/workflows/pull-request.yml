@@ -53,13 +53,24 @@ jobs:
       -
         name: Build and push by digest
         id: build
+        if: endsWith(matrix.target, 'trixie-slim')
         uses: docker/bake-action@v6
         with:
           targets: ${{ matrix.target }}
           set: |
             ${{ matrix.target }}.platform=${{ matrix.platforms }}
             ${{ matrix.target }}.tags=docker.io/max06net/base-gui
-            ${{ matrix.target }}.output=${{ endsWith(matrix.target, 'trixie-slim') && 'type=image,push-by-digest=true,name-canonical=true,push=true' || 'type=cacheonly' }}
+            ${{ matrix.target }}.output=type=image,push-by-digest=true,name-canonical=true,push=true
+
+      -
+        name: Build (cache only)
+        if: "!endsWith(matrix.target, 'trixie-slim')"
+        uses: docker/bake-action@v6
+        with:
+          targets: ${{ matrix.target }}
+          set: |
+            ${{ matrix.target }}.platform=${{ matrix.platforms }}
+            ${{ matrix.target }}.output=type=cacheonly
 
       -
         name: Export digest
