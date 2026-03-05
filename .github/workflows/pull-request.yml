@@ -61,6 +61,8 @@ jobs:
             ${{ matrix.target }}.platform=${{ matrix.platforms }}
             ${{ matrix.target }}.tags=docker.io/max06net/base-gui
             ${{ matrix.target }}.output=type=image,push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+          metadata-file: ${{ runner.temp }}/bake-metadata.json
 
       -
         name: Build (cache only)
@@ -76,9 +78,9 @@ jobs:
         name: Export digest
         if: endsWith(matrix.target, 'trixie-slim')
         run: |
-          mkdir -p ${{ runner.temp }}/digests/${{ matrix.target }}
-          digest="${{ steps.build.outputs.digest }}"
-          touch "${{ runner.temp }}/digests/${{ matrix.target }}/${digest#sha256:}"
+          mkdir -p ${{ runner.temp }}/digests
+          digest=$(jq -r 'to_entries[0].value."containerimage.digest"' ${{ runner.temp }}/bake-metadata.json)
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       -
         name: Upload digest
@@ -86,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.target }}-${{ startsWith(matrix.platforms, 'linux/arm') && 'arm64' || 'amd64' }}
-          path: ${{ runner.temp }}/digests/${{ matrix.target }}/*
+          path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
 
