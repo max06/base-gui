@@ -62,7 +62,6 @@ jobs:
             ${{ matrix.target }}.tags=docker.io/max06net/base-gui
             ${{ matrix.target }}.output=type=image,push-by-digest=true,name-canonical=true,push=true
           provenance: false
-          metadata-file: ${{ runner.temp }}/bake-metadata.json
 
       -
         name: Build (cache only)
@@ -79,7 +78,7 @@ jobs:
         if: endsWith(matrix.target, 'trixie-slim')
         run: |
           mkdir -p ${{ runner.temp }}/digests
-          digest=$(jq -r 'to_entries[0].value."containerimage.digest"' ${{ runner.temp }}/bake-metadata.json)
+          digest=$(echo '${{ steps.build.outputs.metadata }}' | jq -r '."${{ matrix.target }}"."containerimage.digest"')
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       -
