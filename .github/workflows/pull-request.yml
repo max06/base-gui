@@ -1,7 +1,7 @@
 name: PR
 
 on:
-  pull_request:   # Run tests for any PRs.
+  pull_request:
 
 jobs:
   prepare:
@@ -17,8 +17,8 @@ jobs:
         id: generate
         uses: docker/bake-action/subaction/matrix@v6
         with:
-          target: base-gui
-          fields: platforms
+          targets: base-gui
+          fields: target,platforms
 
   validate:
     runs-on: ${{ startsWith(matrix.platforms, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
@@ -30,47 +30,48 @@ jobs:
         include: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       -
+        name: Checkout
+        uses: actions/checkout@v4
+
+      -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       -
         name: Dockerhub Login
-        uses: docker/login-action@v1.10.0
+        uses: docker/login-action@v3
         with:
           username: max06net
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       -
-        name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: docker.io/max06net/base-gui
-      -
-        name: Build
+        name: Build and push by digest
         id: build
         uses: docker/bake-action@v6
         with:
           targets: ${{ matrix.target }}
           set: |
-            *.platform=${{ matrix.platforms }}
-            *.tags=docker.io/max06net/base-gui
-            base-gui-*.output=type=image,push-by-digest=true,name-canonical=true,push=true
+            ${{ matrix.target }}.platform=${{ matrix.platforms }}
+            ${{ matrix.target }}.tags=docker.io/max06net/base-gui
+            ${{ matrix.target }}.output=${{ endsWith(matrix.target, 'trixie-slim') && 'type=image,push-by-digest=true,name-canonical=true,push=true' || 'type=cacheonly' }}
 
-      - name: Export digest
+      -
+        name: Export digest
+        if: endsWith(matrix.target, 'trixie-slim')
         run: |
-          mkdir -p ${{ runner.temp }}/digests
+          mkdir -p ${{ runner.temp }}/digests/${{ matrix.target }}
           digest="${{ steps.build.outputs.digest }}"
-          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+          touch "${{ runner.temp }}/digests/${{ matrix.target }}/${digest#sha256:}"
 
-      - name: Upload digest
+      -
+        name: Upload digest
+        if: endsWith(matrix.target, 'trixie-slim')
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.target }}-${{ startsWith(matrix.platforms, 'linux/arm') && 'arm64' || 'amd64' }}
-          path: ${{ runner.temp }}/digests/*
+          path: ${{ runner.temp }}/digests/${{ matrix.target }}/*
           if-no-files-found: error
           retention-days: 1
-
 
   merge:
     runs-on: ubuntu-latest
@@ -80,40 +81,50 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+        target:
+          - base-gui-trixie-slim
     steps:
       -
         name: Download digests
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digests-${{ matrix.target }}*
+          pattern: digests-${{ matrix.target }}-*
           merge-multiple: true
 
       -
         name: Dockerhub Login
-        uses: docker/login-action@v1.10.0
+        uses: docker/login-action@v3
         with:
           username: max06net
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
+      -
+        name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker meta
+      -
+        name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: max06net/base-gui
+          images: docker.io/max06net/base-gui
+          # matrix.target is e.g. "base-gui-trixie-slim"
+          # Strip the "base-gui-" prefix to get a clean distro suffix: "trixie-slim"
           tags: |
-            type=ref,prefix=pr-,suffix=,event=pr
+            type=ref,prefix=pr-,suffix=-${{ matrix.target != '' && matrix.target || 'unknown' }},event=pr
+          flavor: |
+            suffix=-${{ matrix.target }},onlatest=false
 
-      - name: Create manifest list and push
+      -
+        name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'max06net/base-gui@sha256:%s ' *)
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'docker.io/max06net/base-gui@sha256:%s ' *)
 
-      - name: Inspect image
+      -
+        name: Inspect image
         run: |
-          docker buildx imagetools inspect max06net/base-gui:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect docker.io/max06net/base-gui:${{ steps.meta.outputs.version }}
