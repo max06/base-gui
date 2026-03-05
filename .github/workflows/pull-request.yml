@@ -17,7 +17,7 @@ jobs:
         id: generate
         uses: docker/bake-action/subaction/matrix@v6
         with:
-          targets: base-gui
+          target: base-gui
           fields: target,platforms
 
   validate:
