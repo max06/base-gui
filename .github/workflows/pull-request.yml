@@ -7,7 +7,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
+      matrix: ${{ steps.filter.outputs.matrix }}
     steps:
       -
         name: Checkout
@@ -17,8 +17,14 @@ jobs:
         id: generate
         uses: docker/bake-action/subaction/matrix@v6
         with:
-          target: base-gui
           fields: target,platforms
+      -
+        name: Filter matrix
+        id: filter
+        run: |
+          matrix=$(echo '${{ steps.generate.outputs.matrix }}' | \
+            jq -c '[.[] | select(.target | startswith("base-gui-"))]')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   validate:
     runs-on: ${{ startsWith(matrix.platforms, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
