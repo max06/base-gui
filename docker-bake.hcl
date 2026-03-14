@@ -50,7 +50,7 @@ target "base-gui" {
 }
 
 target "dev" {
-  inherits  = ["base-gui-trixie-slim"]
+  inherits  = ["trixie-slim"]
   platforms = ["linux/amd64"]
   tags      = ["local/base-gui:dev"]
   output    = ["type=docker"]
